@@ -30,14 +30,14 @@ M.type = {
         wl  = 10,       -- 乌龙       无法组成以上牌型，以点数决定大小，例：Q、J、7、K、6。（5张牌不是同一种花色）
     },
     special = {
-        zzql    = 1,    -- 至尊青龙    A—K清一色顺子
-        ytl     = 2,    -- 一条龙      A-K顺子
-        sths    = 3,    -- 三同花顺    头道， 中道，尾道皆可配出同花顺牌型
-        sftx    = 4,    -- 三分天下    三组铁支和任意单牌
-        stst    = 5,    -- 四套三条    拥有四组三条
-        ldb     = 6,    -- 六对半      13张牌中拥有6张对牌
-        ssz     = 7,    -- 三顺子      头道，中道，尾道皆可配出顺子牌型
-        sth     = 8,    -- 三同花      头道，中道，尾道皆可配出同花牌型
+        zzql    = 101,    -- 至尊青龙    A—K清一色顺子
+        ytl     = 102,    -- 一条龙      A-K顺子
+        sths    = 103,    -- 三同花顺    头道， 中道，尾道皆可配出同花顺牌型
+        sftx    = 104,    -- 三分天下    三组铁支和任意单牌
+        stst    = 105,    -- 四套三条    拥有四组三条
+        ldb     = 106,    -- 六对半      13张牌中拥有6张对牌
+        ssz     = 107,    -- 三顺子      头道，中道，尾道皆可配出顺子牌型
+        sth     = 108,    -- 三同花      头道，中道，尾道皆可配出同花牌型
     },
 }
 
@@ -191,7 +191,10 @@ end
 function M.deal_cards(cards)
     local ret = {}
     for _, v in pairs(cards) do
-        table.insert(ret, M.get_card_value(v))
+        table.insert(ret, {
+            color = M.get_card_color(v),
+            value = M.get_card_value(v),
+        })
     end
     return ret
 end
@@ -402,8 +405,16 @@ function M.is_sths(cards)
     local ret , arr = M.is_ssz(cards)
     if ret then
         for _, v in pairs(arr) do
-            if not M.is_the_same_color(v) then
-                ret = false
+            local color = nil
+            for _, item in pairs(v) do
+                if not color then
+                    color = item.color
+                elseif item.color ~= color then
+                    ret = false
+                    break
+                end
+            end
+            if not ret then
                 break
             end
         end
@@ -482,7 +493,7 @@ end
 function M.is_ssz(cards)
     local ret = true
     local arr = M.deal_cards(cards)
-    table.sort(arr, function(a, b) return a < b end)
+    table.sort(arr, function(a, b) return a.value < b.value end)
 
     local tmp_arr = {
         [1] = {},
@@ -498,11 +509,11 @@ function M.is_ssz(cards)
                     table.insert(tmp_arr[j], arr[i])
                     flag = true
                     break
-                elseif arr[i] - tmp_arr[j][#tmp_arr[j]] == 1 then
+                elseif arr[i].value - tmp_arr[j][#tmp_arr[j]].value == 1 then
                     table.insert(tmp_arr[j], arr[i])
                     flag = true
                     break
-                elseif arr[i] == 0xe and tmp_arr[j][1] == 0x2 then
+                elseif arr[i].value == 0xe and tmp_arr[j][1].value == 0x2 then
                     table.insert(tmp_arr[j], 1, arr[i])
                     flag = true
                     break
