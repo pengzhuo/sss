@@ -197,12 +197,188 @@ function M.deal_cards(cards)
 end
 
 function M.get_type(cards)
-    if table.nums(cards) ~= 13 then
-        return nil
+    local cards_num = table.nums(cards)
+    if cards_num == 13 then
+        if M.is_zzql(cards) then
+            return M.type.special.zzql
+        elseif M.is_ytl(cards) then
+            return M.type.special.ytl
+        elseif M.is_sths(cards) then
+            return M.type.special.sths
+        elseif M.is_sftx(cards) then
+            return M.type.special.sftx
+        elseif M.is_stst(cards) then
+            return M.type.special.stst
+        elseif M.is_ldb(cards) then
+            return M.type.special.ldb
+        elseif M.is_ssz(cards) then
+            return M.type.special.ssz
+        elseif M.is_sth(cards) then
+            return M.type.special.sth
+        end
+    elseif cards_num == 5 then
+        if M.is_wt(cards) then
+            return M.type.normal.wt
+        elseif M.is_ths(cards) then
+            return M.type.normal.ths
+        elseif M.is_tz(cards) then
+            return M.type.normal.tz
+        elseif M.is_hl(cards) then
+            return M.type.normal.hl
+        elseif M.is_th(cards) then
+            return M.type.normal.th
+        elseif M.is_sz(cards) then
+            return M.type.normal.sz
+        elseif M.is_st(cards) then
+            return M.type.normal.st
+        elseif M.is_ld(cards) then
+            return M.type.normal.ld
+        elseif M.is_yd(cards) then
+            return M.type.normal.yd
+        else
+            return M.type.normal.wl
+        end
     end
     
 end
 
+---
+--- 五同
+---
+function M.is_wt(cards)
+    local ret = true
+    local group = M.split_by_value(cards)
+    
+    if table.nums(group) ~= 1 then
+        ret = false
+    end
+
+    return ret
+end
+
+---
+--- 同花顺
+---
+function M.is_ths(cards)
+    local ret = true
+    if not M.is_the_same_color(cards) or not M.is_continue(cards) then
+        ret = false
+    end
+    return ret
+end
+
+---
+--- 铁支
+---
+function M.is_tz(cards)
+    local ret = true
+    local group = M.split_by_value(cards)
+    local num = table.nums(group)
+    if num ~= 2 then
+        ret = false
+    else
+        local flag = false
+        for _, v in pairs(group) do
+            if #v == 4 then
+                flag = true
+                break
+            end
+        end
+        ret = flag
+    end
+    return ret
+end
+
+---
+--- 葫芦
+---
+function M.is_hl(cards)
+    local ret = true
+    local group = M.split_by_value(cards)
+    local num = table.nums(group)
+    if num ~= 2 then
+        ret = false
+    else
+        local flag_3 = false
+        local flag_2 = false
+        for _, v in pairs(group) do
+            if #v == 3 then
+                flag_3 = true
+            elseif #v == 2 then
+                flag_2 = true
+            end
+        end
+        ret = flag_2 and flag_3
+    end
+    return ret
+end
+
+---
+--- 同花
+---
+function M.is_th(cards)
+    return M.is_the_same_color(cards)
+end
+
+---
+--- 顺子
+---
+function M.is_sz(cards)
+    return M.is_continue(cards)
+end
+
+---
+--- 三条
+---
+function M.is_st(cards)
+    local ret = true
+    local group = M.split_by_value(cards)
+    local flag = false
+    for _, v in pairs(group) do
+        if #v == 3 then
+            flag = true
+            break
+        end
+    end
+    ret = flag
+    return ret
+end
+
+---
+--- 两对
+---
+function M.is_ld(cards)
+    local ret = true
+    local group = M.split_by_value(cards)
+    local index = 0
+    for _, v in pairs(group) do
+        if #v == 2 then
+            index = index + 1
+        end
+    end
+    ret = index == 2
+    return ret
+end
+
+---
+--- 一对
+---
+function M.is_yd(cards)
+    local ret = true
+    local group = M.split_by_value(cards)
+    local index = 0
+    for _, v in pairs(group) do
+        if #v == 2 then
+            index = index + 1
+        end
+    end
+    ret = index >= 1
+    return ret
+end
+
+---
+--- 至尊青龙
+---
 function M.is_zzql(cards)
     local ret = M.is_the_same_color(cards)
     if ret then
@@ -211,60 +387,33 @@ function M.is_zzql(cards)
     return ret
 end
 
+---
+--- 一条龙
+---
 function M.is_ytl(cards)
     local ret = M.is_continue(cards)
     return ret
 end
 
+---
+--- 三同花顺
+---
 function M.is_sths(cards)
-    local ret = true
-    local group = M.split_by_color(cards)
-    local num = table.nums(group)
-    if num > 3 then
-        ret = false
-    elseif num == 3 then
-        for _, v in pairs(group) do
-            local _num = table.nums(v)
-            if _num == 3 or _num == 5 then
-                if not M.is_continue(v) then
-                    ret = false
-                    break
-                end
-            else
+    local ret , arr = M.is_ssz(cards)
+    if ret then
+        for _, v in pairs(arr) do
+            if not M.is_the_same_color(v) then
                 ret = false
                 break
             end
         end
-    elseif num == 2 then
-        for _, v in pairs(group) do
-            local _num = table.nums(v)
-            table.sort(v, function(a, b) return a < b end)
-            if _num == 3 or _num == 5 then
-                if not M.is_continue(v) then
-                    ret = false
-                    break
-                end
-            elseif _num == 8 then
-                if not M.is_continue({v[1], v[2], v[3]}) or not M.is_continue({v[4], v[5], v[6], v[7], v[8]}) then
-                    ret = false
-                    break
-                end
-            elseif _num == 10 then
-                if not M.is_continue({v[1], v[2], v[3], v[4], v[5]}) or not M.is_continue({v[6], v[7], v[8], v[9], v[10]}) then
-                    ret = false
-                    break
-                end
-            else
-                ret = false
-                break
-            end
-        end
-    else
-        ret = false
     end
     return ret
 end
 
+---
+--- 三分天下
+---
 function M.is_sftx(cards)
     local ret = true
     local group = M.split_by_value(cards)
@@ -285,6 +434,9 @@ function M.is_sftx(cards)
     return ret
 end
 
+---
+--- 四套三条
+---
 function M.is_stst(cards)
     local ret = true
     local group = M.split_by_value(cards)
@@ -305,6 +457,9 @@ function M.is_stst(cards)
     return ret
 end
 
+---
+--- 六对半
+---
 function M.is_ldb(cards)
     local ret = true
     local group = M.split_by_value(cards)
@@ -321,6 +476,9 @@ function M.is_ldb(cards)
     return ret
 end
 
+---
+--- 三顺子
+---
 function M.is_ssz(cards)
     local ret = true
     local arr = M.deal_cards(cards)
@@ -357,9 +515,12 @@ function M.is_ssz(cards)
         end
     end
 
-    return ret
+    return ret, tmp_arr
 end
 
+---
+--- 三同花
+---
 function M.is_sth(cards)
     local ret = true
     local group = M.split_by_color(cards)
