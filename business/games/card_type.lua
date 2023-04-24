@@ -57,6 +57,63 @@ function M.get_card_color(card)
     return card >> 4;
 end
 
+--得到指定数量的组合
+function M.combination(cards, cbntNumber)
+    if cbntNumber > #cards then
+        return nil
+    end
+
+    local assistArray = {}
+    for i = 1, #cards do
+        if i <= cbntNumber then
+            assistArray[i] = 1
+        else
+            assistArray[i] = 0
+        end
+    end
+
+    local cbntResult = {}
+
+    local function getResult(astArray, srcArray, cbntResult)
+        local oneOfCombination = {}
+        for k,v in ipairs(astArray) do
+            if v == 1 then
+                table.insert(oneOfCombination, srcArray[k])
+            end
+        end
+
+        table.insert(cbntResult, oneOfCombination)
+    end
+
+    getResult(assistArray, cards, cbntResult)
+
+    local idx = 1
+    while true do
+        if assistArray[idx + 1] == nil then
+            break
+        end
+        if assistArray[idx] == 1 and assistArray[idx + 1] == 0 then
+            assistArray[idx] = 0
+            assistArray[idx + 1] = 1
+
+            for i = 1 , idx -1 do
+                for j = i + 1, idx do
+                    if assistArray[i] < assistArray[j] then
+                        local mid = assistArray[i]
+                        assistArray[i] = assistArray[j]
+                        assistArray[j] = mid
+                    end
+                end
+            end
+            getResult(assistArray, cards, cbntResult)
+            idx = 1
+        else
+            idx = idx + 1
+        end
+    end
+    return cbntResult
+end
+
 --- 是否顺子
 function M.is_continue(cards)
     local ret = true
@@ -127,6 +184,14 @@ function M.split_by_value(cards)
             ret[tmp] = {}
         end
         table.insert(ret[tmp], v)
+    end
+    return ret
+end
+
+function M.deal_cards(cards)
+    local ret = {}
+    for _, v in pairs(cards) do
+        table.insert(ret, M.get_card_value(v))
     end
     return ret
 end
@@ -258,47 +323,40 @@ end
 
 function M.is_ssz(cards)
     local ret = true
-    local group = M.split_by_value(cards)
-    local num = table.nums(group)
-    if num == 13 then
-        if not M.is_continue(cards) then
-            ret = false
-        end
-    elseif num == 12 then
-        local keys = table.keys(group)
-        for i, v in pairs(keys) do
-            if #group[v] == 2 then
-                if i == 3 then
+    local arr = M.deal_cards(cards)
+    table.sort(arr, function(a, b) return a < b end)
 
-                elseif i == 5 then
+    local tmp_arr = {
+        [1] = {},
+        [2] = {},
+        [3] = {},
+    }
 
-                elseif i == 8 then
-
-                elseif i == 10 then
-
-                elseif i == 12 and v == 0xe then
-
-                else
-                    ret = false
+    for i = 1, #arr do
+        local flag = false
+        for j = 1, #tmp_arr do
+            if #tmp_arr[j] < 5 then
+                if #tmp_arr[j] == 0 then
+                    table.insert(tmp_arr[j], arr[i])
+                    flag = true
+                    break
+                elseif arr[i] - tmp_arr[j][#tmp_arr[j]] == 1 then
+                    table.insert(tmp_arr[j], arr[i])
+                    flag = true
+                    break
+                elseif arr[i] == 0xe and tmp_arr[j][1] == 0x2 then
+                    table.insert(tmp_arr[j], 1, arr[i])
+                    flag = true
+                    break
                 end
-                break
             end
         end
-    elseif num == 11 then
-        local keys = table.keys(group)
-        local arr = {}
-        for i, v in pairs(keys) do
-            local _num = #group[v]
-            if _num == 2 then
-                table.insert(arr, i)
-            end
-        end
-        if #arr == 2 then
-
-        else
+        if not flag then
             ret = false
+            break
         end
     end
+
     return ret
 end
 
